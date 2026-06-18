@@ -1,4 +1,4 @@
-name: Windows 11 RDP - Tailscale Pilihan A
+name: Windows 11 RDP - Tailscale Final Fix
 
 on: 
   workflow_dispatch:
@@ -27,23 +27,23 @@ jobs:
         net localgroup "Remote Desktop Users" mabar /add
       shell: pwsh
 
-    - name: Koneksi Tailscale Portable (Fix Auth Key Pilihan A)
+    - name: Koneksi Tailscale Portable Resmi
       run: |
-        # 1. Download Tailscale versi portable resmi
-        Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile "tailscale-setup.exe"
+        # Download versi exe mandiri
+        Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile "tailscale-setup-latest.exe"
         
-        # 2. Install diam-diam tanpa bentrok service
+        # Install manual tanpa service manager choco
         Start-Process -FilePath ".\tailscale-setup-latest.exe" -ArgumentList "/S /v/qn" -Wait
-        Start-Sleep -Seconds 10
+        Start-Sleep -Seconds 15
         
-        # 3. Konek pake Secret TAILSCALE_AUTH_KEY sesuai Pilihan A
+        # Eksekusi koneksi nembak langsung ke server personal
         & "C:\Program Files\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --accept-dns=false --shields-up
       shell: pwsh
 
     - name: Gaskeun Booting Windows 11
       run: |
         Write-Host "========================================="
-        Write-Host " TAILSCALE OK! SILAKAN CEK TAILSCALE HP LU "
+        Write-Host " TAILSCALE FIX! SILAKAN PANTAU HP LU! "
         Write-Host "========================================="
         
         & "C:\Program Files\qemu\qemu-system-x64.exe" -m 8G -smp 4 -boot d -cdrom win11.iso -hda win11.qcow2 -device usb-mouse -show-cursor -net nic,model=e1000 -net user,hostfwd=tcp::3389-:3389 -vnc :1
