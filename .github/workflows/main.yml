@@ -1,0 +1,55 @@
+name: Windows 11 RDP - Tailscale Pilihan A
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    steps:
+    - name: Download dan Install QEMU + ISO Windows 11
+      run: |
+        choco install qemu -y
+        Invoke-WebRequest -Uri "https://software-static.download.prss.microsoft.com/dbn/Win11_23H2_English_x64v2.iso" -OutFile "win11.iso"
+        & "C:\Program Files\qemu\qemu-img.exe" create -f qcow2 win11.qcow2 100G
+      shell: pwsh
+
+    - name: Aktifkan RDP Internal & Akun Baru
+      run: |
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+        
+        net user mabar P@ssword2026 /add
+        net localgroup administrators mabar /add
+        net localgroup "Remote Desktop Users" mabar /add
+      shell: pwsh
+
+    - name: Koneksi Tailscale Portable (Fix Auth Key Pilihan A)
+      run: |
+        # 1. Download Tailscale versi portable resmi
+        Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile "tailscale-setup.exe"
+        
+        # 2. Install diam-diam tanpa bentrok service
+        Start-Process -FilePath ".\tailscale-setup-latest.exe" -ArgumentList "/S /v/qn" -Wait
+        Start-Sleep -Seconds 10
+        
+        # 3. Konek pake Secret TAILSCALE_AUTH_KEY sesuai Pilihan A
+        & "C:\Program Files\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --accept-dns=false --shields-up
+      shell: pwsh
+
+    - name: Gaskeun Booting Windows 11
+      run: |
+        Write-Host "========================================="
+        Write-Host " TAILSCALE OK! SILAKAN CEK TAILSCALE HP LU "
+        Write-Host "========================================="
+        
+        & "C:\Program Files\qemu\qemu-system-x64.exe" -m 8G -smp 4 -boot d -cdrom win11.iso -hda win11.qcow2 -device usb-mouse -show-cursor -net nic,model=e1000 -net user,hostfwd=tcp::3389-:3389 -vnc :1
+        
+        $loop = $true
+        while($loop) {
+          Start-Sleep -Seconds 60
+        }
+      shell: pwsh
